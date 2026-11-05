@@ -53,7 +53,20 @@ def initialize_database():
             FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
         );
     """)
+    # Add scheduled delivery support to existing databases.
+    order_columns = connection.execute(
+        "PRAGMA table_info(orders)"
+    ).fetchall()
 
+    column_names = {
+        column["name"] for column in order_columns
+    }
+
+    if "scheduled_for" not in column_names:
+        connection.execute(
+            "ALTER TABLE orders ADD COLUMN scheduled_for TEXT"
+        )
+        
     restaurant_count = connection.execute(
         "SELECT COUNT(*) FROM restaurants"
     ).fetchone()[0]

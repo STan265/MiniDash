@@ -33,7 +33,16 @@ def get_menu_items(menu_item_ids):
         connection.close()
 
 
-def create_order(restaurant_id, total_cents, address, created_at, items):
+
+def create_order(
+    restaurant_id,
+    total_cents,
+    address,
+    created_at,
+    items,
+    status="PLACED",
+    scheduled_for=None
+):
     """Save an order and its items in the database."""
     connection = get_connection()
 
@@ -41,10 +50,24 @@ def create_order(restaurant_id, total_cents, address, created_at, items):
         cursor = connection.execute(
             """
             INSERT INTO orders
-            (restaurant_id, status, total_cents, address, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            (
+                restaurant_id,
+                status,
+                total_cents,
+                address,
+                created_at,
+                scheduled_for
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (restaurant_id, "PLACED", total_cents, address, created_at)
+            (
+                restaurant_id,
+                status,
+                total_cents,
+                address,
+                created_at,
+                scheduled_for
+            )
         )
 
         order_id = cursor.lastrowid
@@ -68,6 +91,7 @@ def create_order(restaurant_id, total_cents, address, created_at, items):
 
     finally:
         connection.close()
+
 
 
 

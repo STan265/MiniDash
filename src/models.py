@@ -1,4 +1,6 @@
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -15,6 +17,8 @@ class OrderCreateRequest(BaseModel):
     restaurant_id: int = Field(gt=0)
     address: str = Field(min_length=5)
     items: list[OrderItemRequest] = Field(min_length=1)
+    scheduled_for: datetime | None = None
+
 
 class OrderStatusRequest(BaseModel):
     """Information required to update an order status."""

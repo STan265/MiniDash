@@ -1,4 +1,6 @@
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -126,4 +128,104 @@ def test_update_nonexistent_order_status(client):
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Order not found"
-    
+
+def test_scheduled_order_without_timezone_is_rejected(client):
+    scheduled_time = (
+        datetime.now() + timedelta(days=3)
+    ).isoformat()
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time
+        }
+    )
+
+    assert response.status_code == 400
+    assert "must include a timezone" in response.json()["detail"]
+
+
+def test_scheduled_order_less_than_45_minutes_is_rejected(client):
+    scheduled_time = (
+        datetime.now(timezone.utc) + timedelta(minutes=20)
+    ).isoformat()
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time
+        }
+    )
+
+    assert response.status_code == 400
+    assert "45 minutes" in response.json()["detail"]
+
+
+def test_scheduled_order_more_than_7_days_is_rejected(client):
+    scheduled_time = (
+        datetime.now(timezone.utc) + timedelta(days=8)
+    ).isoformat()
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time
+        }
+    )
+
+    assert response.status_code == 400
+    assert "7 days" in response.json()["detail"]
+
+
+def test_scheduled_order_when_restaurant_is_closed_is_rejected(client):
+    scheduled_time = (
+        datetime.now(timezone.utc) + timedelta(days=3)
+    ).replace(hour=8, minute=0, second=0, microsecond=0).isoformat()
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time
+        }
+    )
+
+    assert response.status_code == 400
+    assert "Restaurant is closed" in response.json()["detail"]
+
+
+def test_create_valid_scheduled_order(client):
+    scheduled_time = (
+        datetime.now(timezone.utc) + timedelta(days=3)
+    ).replace(hour=12, minute=0, second=0, microsecond=0).isoformat()
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time
+        }
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "SCHEDULED"
+
+    order_id = response.json()["order_id"]
+
+    order_response = client.get(f"/orders/{order_id}")
+
+    assert order_response.status_code == 200
+    assert order_response.json()["scheduled_for"] is not None

@@ -1,4 +1,6 @@
 
+from datetime import timedelta, timezone
+
 from src.repositories import orders as order_repository
 
 
@@ -53,22 +55,77 @@ def place_order(order_request, clock):
             "quantity": item.quantity
         })
 
+        
     # 5. Get the current time from the injected clock.
-    created_at = clock().isoformat()
+    now = clock()
 
-    # 6. Save the order.
+    # 6. Validate the requested scheduled delivery time.
+    scheduled_for = order_request.scheduled_for
+
+    if scheduled_for is not None:
+
+        # A timezone is required for scheduled deliveries.
+        if (
+            scheduled_for.tzinfo is None
+            or scheduled_for.utcoffset() is None
+        ):
+            raise ValueError(
+                "Scheduled delivery must include a timezone"
+            )
+
+        # Convert both times to UTC for accurate comparison.
+        scheduled_utc = scheduled_for.astimezone(timezone.utc)
+        now_utc = now.astimezone(timezone.utc)
+
+        # Delivery must be at least 45 minutes away.
+        if scheduled_utc < now_utc + timedelta(minutes=45):
+            raise ValueError(
+                "Scheduled delivery must be at least 45 minutes ahead"
+            )
+
+        # Delivery cannot be more than 7 days away.
+        if scheduled_utc > now_utc + timedelta(days=7):
+            raise ValueError(
+                "Scheduled delivery cannot be more than 7 days ahead"
+            )
+                    # Check whether the restaurant is open at the requested time.
+        delivery_time = scheduled_for.strftime("%H:%M")
+
+        opens_at = restaurant["opens_at"]
+        closes_at = restaurant["closes_at"]
+
+        if not (opens_at <= delivery_time < closes_at):
+            raise ValueError(
+                "Restaurant is closed at the scheduled delivery time"
+            )
+
+    created_at = now.isoformat()
+
+
+    # 7. Determine the order status.
+    if scheduled_for is not None:
+        order_status = "SCHEDULED"
+        scheduled_value = scheduled_utc.isoformat()
+    else:
+        order_status = "PLACED"
+        scheduled_value = None
+
+    # 8. Save the order.
     order_id = order_repository.create_order(
         restaurant_id=order_request.restaurant_id,
         total_cents=total_cents,
         address=order_request.address,
         created_at=created_at,
-        items=order_items
+        items=order_items,
+        status=order_status,
+        scheduled_for=scheduled_value
     )
 
     return {
         "order_id": order_id,
         "restaurant_id": order_request.restaurant_id,
-        "status": "PLACED",
+        "status": order_status,
+        "scheduled_for": scheduled_value,
         "total_cents": total_cents,
         "address": order_request.address,
         "created_at": created_at
