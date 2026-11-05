@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from src.database import initialize_database
 from src.routes.restaurants import router as restaurant_router
+from src.routes.orders import router as order_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,6 +22,7 @@ app = FastAPI(
 )
 
 app.include_router(restaurant_router)
+app.include_router(order_router)
 
 @app.get("/")
 def home():
