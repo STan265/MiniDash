@@ -304,7 +304,9 @@ def test_scheduled_order_is_not_released_too_early(client):
 
 def test_cancel_scheduled_order_before_release(client):
     fixed_now = datetime.now(timezone.utc)
-    scheduled_time = fixed_now + timedelta(hours=2)
+    scheduled_time = (
+    fixed_now + timedelta(days=1)
+    ).replace(hour=12, minute=0, second=0, microsecond=0)
 
     response = client.post(
         "/orders",
@@ -330,7 +332,9 @@ def test_cancel_scheduled_order_before_release(client):
 
 
 def test_cannot_cancel_scheduled_order_at_release_boundary(client):
-    scheduled_time = datetime.now(timezone.utc) + timedelta(hours=2)
+    scheduled_time = (
+    datetime.now(timezone.utc) + timedelta(days=1)
+    ).replace(hour=12, minute=0, second=0, microsecond=0)
     fixed_now = scheduled_time - timedelta(minutes=30)
 
     response = client.post(
