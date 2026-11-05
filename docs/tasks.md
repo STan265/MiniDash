@@ -52,7 +52,7 @@
 ## Task 5: Implement Scheduled Order Validation
 
 **Description:**
-- Add the optional scheduled_delivery_at field.
+- Add the optional scheduled_for field.
 - Implement an injectable clock.
 - Validate the 45-minute minimum scheduling window.
 - Validate the 7-day maximum scheduling window.
@@ -83,14 +83,14 @@
 ## Task 7: Implement Scheduled Order Cancellation
 
 **Description:**
-- Allow customers to cancel scheduled orders before release.
+- Allow customers to cancel scheduled orders more than 30 minutes before delivery.
 - Change the order status to CANCELLED.
-- Reject cancellation after the order has been released.
+- Reject cancellation at or after the 30-minute release boundary.
 
 **Test:**
 - Verify a scheduled order can be cancelled.
 - Verify a cancelled order cannot be released.
-- Verify a PLACED order cannot be cancelled through the scheduled-order cancellation operation.
+- Verify cancellation is rejected at exactly 30 minutes before delivery and after an order has been released to PLACED.
 
 ## Task 8: Final Integration, Documentation, and Verification
 
@@ -100,6 +100,8 @@
 - Verify all API endpoints.
 - Review error handling and database behavior.
 - Run the complete automated test suite.
+- Verify the background worker checks for releasable orders every 30 seconds.
+- Verify the worker shuts down cleanly when the application stops.
 
 **Test:**
 - Run pytest.

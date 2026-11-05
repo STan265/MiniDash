@@ -4,6 +4,7 @@ from src.services.orders import (
     change_order_status
 )
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
@@ -192,7 +193,7 @@ def test_scheduled_order_more_than_7_days_is_rejected(client):
 
 def test_scheduled_order_when_restaurant_is_closed_is_rejected(client):
     scheduled_time = (
-        datetime.now(timezone.utc) + timedelta(days=3)
+        datetime.now(ZoneInfo("America/New_York")) + timedelta(days=3)
     ).replace(hour=8, minute=0, second=0, microsecond=0).isoformat()
 
     response = client.post(
@@ -211,7 +212,7 @@ def test_scheduled_order_when_restaurant_is_closed_is_rejected(client):
 
 def test_create_valid_scheduled_order(client):
     scheduled_time = (
-        datetime.now(timezone.utc) + timedelta(days=3)
+        datetime.now(ZoneInfo("America/New_York")) + timedelta(days=3)
     ).replace(hour=12, minute=0, second=0, microsecond=0).isoformat()
 
     response = client.post(
@@ -303,9 +304,9 @@ def test_scheduled_order_is_not_released_too_early(client):
     assert order["status"] == "SCHEDULED"
 
 def test_cancel_scheduled_order_before_release(client):
-    fixed_now = datetime.now(timezone.utc)
+    fixed_now = datetime.now(ZoneInfo("America/New_York"))
     scheduled_time = (
-    fixed_now + timedelta(days=1)
+        fixed_now + timedelta(days=1)
     ).replace(hour=12, minute=0, second=0, microsecond=0)
 
     response = client.post(
@@ -333,7 +334,7 @@ def test_cancel_scheduled_order_before_release(client):
 
 def test_cannot_cancel_scheduled_order_at_release_boundary(client):
     scheduled_time = (
-    datetime.now(timezone.utc) + timedelta(days=1)
+    datetime.now(ZoneInfo("America/New_York")) + timedelta(days=1)
     ).replace(hour=12, minute=0, second=0, microsecond=0)
     fixed_now = scheduled_time - timedelta(minutes=30)
 

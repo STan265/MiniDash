@@ -1,8 +1,8 @@
 
 from datetime import timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from src.repositories import orders as order_repository
-
 
 def place_order(order_request, clock):
     """Validate, calculate, and save a customer order."""
@@ -89,7 +89,9 @@ def place_order(order_request, clock):
                 "Scheduled delivery cannot be more than 7 days ahead"
             )
                     # Check whether the restaurant is open at the requested time.
-        delivery_time = scheduled_for.strftime("%H:%M")
+        delivery_time = scheduled_utc.astimezone(
+        ZoneInfo("America/New_York")
+        ).strftime("%H:%M")
 
         opens_at = restaurant["opens_at"]
         closes_at = restaurant["closes_at"]

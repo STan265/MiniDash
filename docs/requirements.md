@@ -27,23 +27,26 @@ As a customer, I want to cancel my scheduled order before it is released so that
 
 1. **Optional scheduling:** When a customer submits an order without a scheduled delivery time, the system shall process it through the normal immediate-order workflow.
 
-2. **Minimum scheduling window:** When a customer requests a delivery time less than 45 minutes in the future, the system shall reject the request with `SCHEDULE_TOO_SOON`.
+2. Minimum scheduling window: When a customer requests a delivery time less than 45 minutes in the future, the system shall reject the request with HTTP 400 and a clear validation error.
 
-3. **Maximum scheduling window:** When a customer requests a delivery time more than 7 days in the future, the system shall reject the request with `SCHEDULE_TOO_FAR`.
+3. Maximum scheduling window: When a customer requests a delivery time more than 7 days in the future, the system shall reject the request with HTTP 400 and a clear validation error.
 
-4. **Restaurant operating hours:** When a customer requests a delivery time outside the restaurant's operating hours, the system shall reject the request with `RESTAURANT_CLOSED`.
+4. Restaurant operating hours: When a customer requests a delivery time outside the restaurant's operating hours, the system shall reject the request with HTTP 400 and a clear validation error.
 
 5. **Scheduled order creation:** When a customer submits a valid scheduled order, the system shall save the requested delivery time and set the order status to `SCHEDULED`.
 
 6. **Automatic release:** When a scheduled order reaches 30 minutes before its delivery time, the system shall change its status from `SCHEDULED` to `PLACED` exactly once.
 
-7. **Cancellation:** When a customer cancels an order whose status is `SCHEDULED`, the system shall change its status to `CANCELLED` and prevent automatic release.
+7. Cancellation:
+When a customer cancels a scheduled order more than 30 minutes before its delivery time, the system shall change its status to CANCELLED and prevent automatic release.
 
-8. **Cancellation after release:** When a customer attempts to cancel an order after its status has changed to `PLACED`, the system shall reject the scheduled-order cancellation request.
+8. Cancellation at or after release time: When a customer attempts to cancel a scheduled order that has reached the 30-minute release window, the system shall reject the cancellation request.
 
 9. **Injected clock:** When the application evaluates scheduling windows or releases orders, the system shall use an injected clock rather than directly accessing the operating system clock in business logic.
 
 10. **Invalid date/time:** When a customer submits an invalid scheduled delivery date or time, the system shall reject the request with a clear validation error.
+
+11. Timezone validation: When a customer submits a scheduled delivery time without timezone information, the system shall reject the request with a clear validation error.
 
 ## 4. Out of Scope
 
@@ -66,7 +69,10 @@ The following features are not included:
 - Orders will be released 30 minutes before the requested delivery time.
 - Scheduled orders can only be cancelled before release.
 - All scheduling logic will use an injectable clock to support deterministic testing.
-- The restaurant's operating hours will determine whether a requested delivery time is permitted.
+- Restaurant operating hours are checked using the submitted delivery time's clock value. Restaurant-specific time zone conversion is not implemented.
+- A background worker checks for scheduled orders every 30 seconds.
+- Orders become eligible for release when they are within 30 minutes of their scheduled delivery time. Actual release may occur up to approximately 30 seconds after the threshold.
+- Scheduled delivery timestamps are stored in UTC after validation.
 
 ## 6. Definition of Done
 

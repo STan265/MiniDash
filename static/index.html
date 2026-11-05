@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniDash - Food Delivery</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="site-header">
+    <a href="/" class="logo">MiniDash</a>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/track-order">Track Order</a>
+        <a href="/checkout">Checkout (<span id="cart-count">0</span>)</a>
+    </nav>
+</header>
+
+<main class="container">
+
+    <!-- Homepage -->
+    <section id="homePage" class="page hidden">
+        <div class="hero">
+            <h1>Delicious Food Delivered</h1>
+            <p>Order from your favorite local restaurants.</p>
+        </div>
+
+        <h2>Our Restaurants</h2>
+        <div id="restaurant-list" class="restaurant-grid"></div>
+    </section>
+
+    <!-- Restaurant Page -->
+    <section id="restaurantPage" class="page hidden">
+        <a href="/" class="back-link">← Back to Restaurants</a>
+        <h1 id="restaurant-name">Restaurant</h1>
+        <p id="restaurant-description"></p>
+
+        <h2>Menu</h2>
+        <div id="menu-list" class="menu-grid"></div>
+        <div id="restaurant-message" class="message"></div>
+    </section>
+
+    <!-- Checkout Page -->
+    <section id="checkoutPage" class="page hidden">
+        <h1>Checkout</h1>
+
+        <div class="cart-card">
+            <h2>Your Cart</h2>
+            <div id="cart-items"></div>
+            <div id="cart-total" class="cart-total"></div>
+        </div>
+
+        <form id="checkout-form">
+            <label for="delivery-address">Delivery Address</label>
+            <input id="delivery-address" name="address"
+                   type="text" required minlength="5">
+
+            <label for="scheduled-for">Schedule Delivery (Optional)</label>
+            <input id="scheduled-for" name="scheduled_for"
+                   type="datetime-local">
+
+            <button type="submit" class="button">
+                Place Order
+            </button>
+            <div id="checkout-message" class="message"></div>
+        </form>
+    </section>
+
+    <!-- Confirmation Page -->
+    <section id="confirmationPage" class="page hidden">
+        <div class="order-card">
+            <h1>Order Confirmation</h1>
+            <div id="confirmation-details"></div>
+            <a href="/track-order" class="button">Track Your Order</a>
+            <a href="/" class="button secondary">Continue Shopping</a>
+        </div>
+    </section>
+
+    <!-- Tracking Page -->
+    <section id="trackingPage" class="page hidden">
+        <h1>Track Your Order</h1>
+
+        <form id="tracking-form">
+            <label for="tracking-id">Order Number</label>
+            <input id="tracking-id" type="number" min="1" required>
+            <button type="submit" class="button">Find Order</button>
+        </form>
+
+        <div id="tracking-result"></div>
+    </section>
+
+</main>
+
+<footer>
+    <p>MiniDash Food Delivery</p>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
+
