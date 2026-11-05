@@ -158,3 +158,31 @@ def update_order_status(order_id, status):
 
     finally:
         connection.close()
+
+def release_due_orders(release_cutoff):
+    """Release scheduled orders that are within the release window."""
+    connection = get_connection()
+
+    try:
+        cursor = connection.execute(
+            """
+            UPDATE orders
+            SET status = 'PLACED'
+            WHERE status = 'SCHEDULED'
+              AND scheduled_for <= ?
+            """,
+            (release_cutoff,)
+        )
+
+        released_count = cursor.rowcount
+
+        connection.commit()
+        return released_count
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        connection.close()
+        

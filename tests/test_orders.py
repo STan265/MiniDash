@@ -1,4 +1,5 @@
 
+from src.services.orders import release_scheduled_orders
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -229,3 +230,71 @@ def test_create_valid_scheduled_order(client):
 
     assert order_response.status_code == 200
     assert order_response.json()["scheduled_for"] is not None
+
+def test_release_scheduled_order_at_30_minute_boundary(client):
+    scheduled_time = (
+        datetime.now(timezone.utc) + timedelta(hours=1)
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time.isoformat()
+        }
+    )
+
+    assert response.status_code == 201
+
+    fixed_clock = scheduled_time - timedelta(minutes=30)
+
+    released_count = release_scheduled_orders(
+        clock=lambda: fixed_clock
+    )
+
+    assert released_count == 1
+
+    order_id = response.json()["order_id"]
+    order = client.get(f"/orders/{order_id}").json()
+
+    assert order["status"] == "PLACED"
+
+    # Calling the release function again must not release it twice.
+    second_release_count = release_scheduled_orders(
+        clock=lambda: fixed_clock
+    )
+
+    assert second_release_count == 0
+
+
+def test_scheduled_order_is_not_released_too_early(client):
+    scheduled_time = (
+        datetime.now(timezone.utc) + timedelta(hours=1)
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time.isoformat()
+        }
+    )
+
+    assert response.status_code == 201
+
+    fixed_clock = scheduled_time - timedelta(minutes=31)
+
+    released_count = release_scheduled_orders(
+        clock=lambda: fixed_clock
+    )
+
+    assert released_count == 0
+
+    order_id = response.json()["order_id"]
+    order = client.get(f"/orders/{order_id}").json()
+
+    assert order["status"] == "SCHEDULED"

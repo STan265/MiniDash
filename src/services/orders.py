@@ -166,3 +166,19 @@ def change_order_status(order_id, status):
         raise ValueError("Order not found")
 
     return order_repository.get_order(order_id)
+
+def release_scheduled_orders(clock):
+    """Release scheduled orders 30 minutes before delivery."""
+    now = clock()
+
+    # The clock must provide a timezone-aware datetime.
+    if now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError("Clock must return a timezone-aware datetime")
+
+    # Calculate the release cutoff.
+    release_cutoff = (
+        now.astimezone(timezone.utc) + timedelta(minutes=30)
+    ).isoformat()
+
+    # Release all orders due by this cutoff.
+    return order_repository.release_due_orders(release_cutoff)
