@@ -51,9 +51,10 @@ def update_order_status(
 
     try:
         return change_order_status(
-            order_id,
-            status_request.status
-        )
+        order_id,
+        status_request.status,
+        clock=lambda: datetime.now(timezone.utc)
+)
 
     except ValueError as error:
         raise HTTPException(

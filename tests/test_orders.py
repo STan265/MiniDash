@@ -1,5 +1,8 @@
 
-from src.services.orders import release_scheduled_orders
+from src.services.orders import (
+    release_scheduled_orders,
+    change_order_status
+)
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -297,4 +300,59 @@ def test_scheduled_order_is_not_released_too_early(client):
     order_id = response.json()["order_id"]
     order = client.get(f"/orders/{order_id}").json()
 
+    assert order["status"] == "SCHEDULED"
+
+def test_cancel_scheduled_order_before_release(client):
+    fixed_now = datetime.now(timezone.utc)
+    scheduled_time = fixed_now + timedelta(hours=2)
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time.isoformat()
+        }
+    )
+
+    assert response.status_code == 201
+
+    order_id = response.json()["order_id"]
+
+    cancelled_order = change_order_status(
+        order_id,
+        "CANCELLED",
+        clock=lambda: fixed_now
+    )
+
+    assert cancelled_order["status"] == "CANCELLED"
+
+
+def test_cannot_cancel_scheduled_order_at_release_boundary(client):
+    scheduled_time = datetime.now(timezone.utc) + timedelta(hours=2)
+    fixed_now = scheduled_time - timedelta(minutes=30)
+
+    response = client.post(
+        "/orders",
+        json={
+            "restaurant_id": 1,
+            "address": "123 Main Street, New York, NY",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "scheduled_for": scheduled_time.isoformat()
+        }
+    )
+
+    assert response.status_code == 201
+
+    order_id = response.json()["order_id"]
+
+    with pytest.raises(ValueError, match="Only scheduled orders"):
+        change_order_status(
+            order_id,
+            "CANCELLED",
+            clock=lambda: fixed_now
+        )
+
+    order = client.get(f"/orders/{order_id}").json()
     assert order["status"] == "SCHEDULED"

@@ -141,7 +141,7 @@ def retrieve_order(order_id):
     return order
 
 
-def change_order_status(order_id, status):
+def change_order_status(order_id, status, clock):
     """Validate and update an order's status."""
 
     allowed_statuses = {
@@ -156,6 +156,36 @@ def change_order_status(order_id, status):
 
     if status not in allowed_statuses:
         raise ValueError("Invalid order status")
+
+    # Handle scheduled-order cancellation separately.
+    if status == "CANCELLED":
+        now = clock()
+
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise ValueError(
+                "Clock must return a timezone-aware datetime"
+            )
+
+        cancellation_cutoff = (
+            now.astimezone(timezone.utc) + timedelta(minutes=30)
+        ).isoformat()
+
+        cancelled = order_repository.cancel_scheduled_order(
+            order_id,
+            cancellation_cutoff
+        )
+
+        if not cancelled:
+            order = order_repository.get_order(order_id)
+
+            if order is None:
+                raise ValueError("Order not found")
+
+            raise ValueError(
+                "Only scheduled orders can be cancelled before their release time"
+            )
+
+        return order_repository.get_order(order_id)
 
     updated = order_repository.update_order_status(
         order_id,

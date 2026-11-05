@@ -185,4 +185,29 @@ def release_due_orders(release_cutoff):
 
     finally:
         connection.close()
-        
+
+def cancel_scheduled_order(order_id, cancellation_cutoff):
+    """Cancel a scheduled order before its release time."""
+    connection = get_connection()
+
+    try:
+        cursor = connection.execute(
+            """
+            UPDATE orders
+            SET status = 'CANCELLED'
+            WHERE id = ?
+              AND status = 'SCHEDULED'
+              AND scheduled_for > ?
+            """,
+            (order_id, cancellation_cutoff)
+        )
+
+        connection.commit()
+        return cursor.rowcount > 0
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        connection.close()
